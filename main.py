@@ -5,6 +5,17 @@ import speech_recognition as s_r
 import pyaudio
 
 
+def speech():
+    r = s_r.Recognizer()
+    my_mic_device = s_r.Microphone(device_index=1)
+    with my_mic_device as source:
+        print("SPEAK NOW")
+        r.adjust_for_ambient_noise(source)
+        audio = r.listen(source)
+    speech_said = r.recognize_google(audio)
+    return speech_said
+
+
 class handDetector():
     def __init__(self, mode=False, maxHands=2, detectionCon=0.5, trackCon=0.5):
         self.mode = mode
@@ -46,6 +57,12 @@ class handDetector():
 def main():
     operator = "a"
     result = 0
+    flag_num_1 = flag_num_2 = flag_op = flag_result = 0
+    frame_count = 0
+    tipID = [4, 8, 12, 16, 20]
+    num = 0
+    digit = 0
+    num_1 = num_2 = ""
 
     print("Speak 'START' to start entering numbers and 'STOP' to exit program")
     print("Speak 'NUMBER' to enter digits and 'OPERATOR' to select an operation")
@@ -55,18 +72,21 @@ def main():
     print("                         3. Multiplication ")
     print("                         4. Division ")
 
+    flag = {"first": False, "operator": False, "second": False, "clear": False}
+    frame_count_same_frames = 0
+    first, operator, second = "", "", ""
+    frame_count_clear_frames = 0
+
     capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     # wCam, hCam= 640, 480
     # capture.set(3, wCam)
     # capture.set(4, hCam)
     prev_time = 0
     detector = handDetector(detectionCon=0.70)
-    tipID = [4, 8, 12, 16, 20]
-    num = 0
-    num_1 = num_2 = str(num)
-    flag = 0
-    # counting fingers after detection
-    while flag == 0:
+
+    # frame_counting fingers after detection
+    while True:
+        start = time.process_time()
         success, img = capture.read()
 
         img = detector.findHands(img)
@@ -79,39 +99,59 @@ def main():
             if lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
                 # print("thumb open")
                 num = 6
+                frame_count = frame_count + 1
                 if lmList[8][2] < lmList[5][2]:
                     # print("index open")
                     num = 7
+                    frame_count = frame_count + 1
                     if lmList[12][2] < lmList[9][2]:
                         #   print("middle open")
                         num = 8
+                        frame_count = frame_count + 1
                         if lmList[16][2] < lmList[13][2]:
                             #      print("ring open")
                             # num = 9
                             if lmList[20][2] < lmList[18][2]:
+                                #start = time.process_time()
                                 #         print("end open")
                                 num = 5
-                                #num_1 = num_1 + str(num)
+                                frame_count = frame_count + 1
+                                #print(time.process_time() - start)
+                                if frame_count>250:
+                                    num_1 = num_1 + str(num)
+                                    frame_count=0
 
                     elif lmList[20][2] < lmList[18][2]:
                         #         print("end open")
                         num = 9
+                        frame_count = frame_count + 1
+                        if frame_count > 250:
+                            num_1 = num_1 + str(num)
+                            frame_count = 0
             #  finger.append(1)
             else:
                 # print("thumb close")
                 num = 0
+                frame_count = frame_count + 1
                 if lmList[8][2] < lmList[5][2]:
                     # print("index open")
                     num = 1
+                    frame_count = frame_count + 1
+                    #while flag_op == 1:
+                     #   operator = '+'
+                      #  flag_op = 2
                     if lmList[12][2] < lmList[9][2]:
                         #   print("middle open")
                         num = 2
+                        frame_count = frame_count + 1
                         if lmList[16][2] < lmList[13][2]:
                             #      print("ring open")
                             num = 3
+                            frame_count = frame_count + 1
                             if lmList[20][2] < lmList[18][2]:
                                 #         print("end open")
                                 num = 4
+                                frame_count = frame_count + 1
             #   finger.append(0)
             # print(finger)
             # finger_count = finger.count(1)
@@ -125,11 +165,37 @@ def main():
         prev_time = current_time
 
         cv2.putText(img, f'FPS:{int(fps)}', (400, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+        cv2.putText(img, f'Timer:{float(start)}', (300, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+        cv2.putText(img, f'Timer:{str(num_1)}', (200, 130), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
         cv2.imshow("Video", img)
         cv2.waitKey(1)
+        print(frame_count)
 
+        if 14 < start< 16 and flag_num_1 == 0:
+            cv2.putText(img, "First number", (400, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            #speech_said = speech()
+            #print("Command given:", speech_said)
+            #if speech_said == "exit":
+            print("Enter First number")
+            flag_num_1 = 1
+        elif 17< start < 19 and flag_op == 0:
+            cv2.putText(img, "Opera", (400, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            print("Enter Operator")
+            #print("Operator", operator)
+            flag_op = 1
+        elif 20 < start < 22 and flag_num_2 == 0:
+            cv2.putText(img, "Second number", (400, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            print("Enter Second number")
+            flag_num_2 = 1
+        elif 20 < start < 22 and flag_result == 0:
+            cv2.putText(img, "Second number", (400, 100), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            print("Result is:",result)
+            flag_result = 1
+
+    #print(time.process_time() - start)
     capture.release()
     cv2.destroyAllWindows()
+
 
 
 if __name__ == '__main__':
