@@ -5,6 +5,19 @@ import speech_recognition as s_r
 import pyaudio
 
 
+def calculator(a, op, b):
+    switcher = {
+        '+': a + b,
+        '-': a - b,
+        '*': a * b,
+        '/': a / b,
+        '%': a % b,
+        '>': a > b,
+        '<': a < b
+      }
+    return switcher.get(op, "nothing")
+
+
 def speech():
     r = s_r.Recognizer()
     my_mic_device = s_r.Microphone(device_index=1)
@@ -55,26 +68,21 @@ class handDetector():
 
 
 def main():
-    result = 0
+    result = a = b = 0
     flag_num_1 = flag_num_2 = flag_op = flag_result = 0
-    frame_count = 0
+    frame_count = timer_count = 0
     tipID = [4, 8, 12, 16, 20]
     num = 0
-    digit = 0
-    num_1 = num_2 = operator = ""
+    num_1 = num_2 = operator = op = ""
 
-    print("Speak 'START' to start entering numbers and 'STOP' to exit program")
-    print("Speak 'NUMBER' to enter digits and 'OPERATOR' to select an operation")
     print("Digits can be entered from 0-9")
     print("Operations available are 1. Addition ")
     print("                         2. Subtraction ")
     print("                         3. Multiplication ")
     print("                         4. Division ")
-
-    flag = {"first": False, "operator": False, "second": False, "clear": False}
-    frame_count_same_frames = 0
-    first, operator, second = "", "", ""
-    frame_count_clear_frames = 0
+    print("                         5. Modulus ")
+    print("                         6. Less Than ")
+    print("                         7. Greater Than ")
 
     capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     prev_time = 0
@@ -92,66 +100,102 @@ def main():
         if len(lmList) != 0:
             finger = []
 
-            if lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
-                # print("thumb open")
-                num = 6
+            if lmList[20][2] < lmList[18][2] and lmList[16][2] < lmList[13][2] and lmList[12][2] < lmList[9][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] < lmList[tipID[0] - 2][1]:
+                #print("end open")
+                num = 4
                 frame_count = frame_count + 1
-                if lmList[8][2] < lmList[5][2]:
-                    # print("index open")
-                    num = 7
-                    frame_count = frame_count + 1
-                    if lmList[12][2] < lmList[9][2]:
-                        #   print("middle open")
-                        num = 8
-                        frame_count = frame_count + 1
-                        if lmList[16][2] < lmList[13][2]:
-                            #      print("ring open")
-                            # num = 9
-                            if lmList[20][2] < lmList[18][2]:
-                                #start = time.process_time()
-                                #         print("end open")
-                                num = 5
-                                frame_count = frame_count + 1
-                                #print(time.process_time() - start)
-                                if frame_count > 100:
-                                    num_1 = num_1 + str(num)
-                                    frame_count = 0
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "/"
 
+            elif lmList[16][2] < lmList[13][2] and lmList[12][2] < lmList[9][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] < lmList[tipID[0] - 2][1]:
+                #      print("ring open")
+                num = 3
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "*"
 
-                    elif lmList[20][2] < lmList[18][2]:
-                        #         print("end open")
-                        num = 9
-                        frame_count = frame_count + 1
-                        if frame_count > 100:
-                            num_1 = num_1 + str(num)
-                            frame_count = 0
-            #  finger.append(1)
-            else:
+            elif lmList[12][2] < lmList[9][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] < lmList[tipID[0] - 2][1]:
+                #   print("middle open")
+                num = 2
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "-"
+
+            elif lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] < lmList[tipID[0] - 2][1]:
+                # print("index open")
+                num = 1
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "+"
+
+            elif lmList[tipID[0]][1] < lmList[tipID[0] - 2][1]:
                 # print("thumb close")
                 num = 0
                 frame_count = frame_count + 1
-                if lmList[8][2] < lmList[5][2]:
-                    # print("index open")
-                    num = 1
-                    frame_count = frame_count + 1
-                    #while flag_op == 1:
-                     #   operator = '+'
-                      #  flag_op = 2
-                    if lmList[12][2] < lmList[9][2]:
-                        #   print("middle open")
-                        num = 2
-                        frame_count = frame_count + 1
-                        if lmList[16][2] < lmList[13][2]:
-                            #      print("ring open")
-                            num = 3
-                            frame_count = frame_count + 1
-                            if lmList[20][2] < lmList[18][2]:
-                                #         print("end open")
-                                num = 4
-                                frame_count = frame_count + 1
-                                if frame_count > 100:
-                                    num_1 = num_1 + str(num)
-                                    frame_count = 0
+                timer_count = timer_count + 1
+                if frame_count > 40 and flag_num_1:
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+
+            elif lmList[20][2] < lmList[18][2] and lmList[16][2] < lmList[13][2] and lmList[12][2] < lmList[9][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
+                #         print("end open")
+                num = 5
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "%"
+
+            elif lmList[12][2] < lmList[9][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
+                #   print("middle open")
+                num = 8
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and flag_num_1:
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    
+            elif lmList[20][2] < lmList[18][2] and lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
+                #         print("end open")
+                num = 9
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and flag_num_1:
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+
+            elif lmList[8][2] < lmList[5][2] and lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
+                # print("index open")
+                num = 7
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = ">"
+
+            elif lmList[tipID[0]][1] > lmList[tipID[0] - 2][1]:
+                # print("thumb open")
+                num = 6
+                frame_count = frame_count + 1
+                timer_count = timer_count + 1
+                if frame_count > 40 and (flag_num_1 or flag_op == 1):
+                    num_1 = num_1 + str(num)
+                    frame_count = 0
+                    operator = "<"
 
             cv2.rectangle(img, (40, 275), (130, 385), (0, 0, 255), cv2.FILLED)
             cv2.putText(img, str(num), (45, 375), cv2.FONT_HERSHEY_PLAIN, 8, (0, 255, 0), 15)
@@ -161,46 +205,65 @@ def main():
         prev_time = current_time
 
         cv2.putText(img, f'FPS:{int(fps)}', (400, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-        cv2.putText(img, f'Timer:{float(start)}', (50, 90), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+        cv2.putText(img, f'Timer:{float(start)}', (50, 60), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+        if start > 10.8 and start<11:
+            print("LLL0", timer_count)
 
-       #if 14 < start< 24 and flag_num_1 == 0
-        if 14 < start< 24:
+        if 11 < start< 19:
             cv2.putText(img, 'Enter First number', (160, 400), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
             cv2.putText(img, f'Number:{str(num_1)}', (40, 110), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
             flag_num_1 = 1
-            #speech_said = speech()
-            #print("Command given:", speech_said)
-            #if speech_said == "exit":
-            #print("Enter First number")
+           # print("First number",num_1)
+            operator = ""
+            a = num_1
+            if start > 18.8:
+                print("LLL1",timer_count)
 
-        elif 25< start < 30 :
+        elif 19< start < 22:
             cv2.putText(img, 'Enter Operator', (160, 400), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
             cv2.putText(img, f'Operator:{str(operator)}', (40, 110), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            cv2.putText(img, str(a), (40, 150), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
             flag_op = 1
             flag_num_1 = 0
-            print("Enter Operator")
-            #print("Operator", operator)
-            flag_op = 1
-        elif 31 < start < 41 :
+            num_1 = ""
+           # print("Operator", operator)
+            op = operator
+            if start > 21.8:
+                print("LLL2",timer_count)
+
+        elif 22 < start < 29:
             cv2.putText(img, 'Enter Second number', (160, 400), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
             cv2.putText(img, f'Number:{str(num_1)}', (40, 110), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-            print("Enter Second number")
+            cv2.putText(img, str(a) + str(op), (40, 150), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
             flag_num_2 = 1
-        elif 41 < start < 45:
+            flag_op = 0
+            flag_num_1 = 1
+           # print("Enter Second number", num_1)
+            b = num_1
+            if start > 28.8 :
+                print("LLL3",timer_count)
+
+        elif 29 < start < 31:
+            result = calculator(int(a), op, int(b))
             cv2.putText(img, 'Result is:' + str(result), (160, 400), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
-            cv2.putText(img, 'Result is:' + str(result), (40, 110), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-
-            print("Result is:",result)
+            #cv2.putText(img, 'Result is:' + str(result), (40, 110), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            cv2.putText(img, str(a) + str(op) + str(b) + " = " + str(result), (40, 150), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+           # print("Result is:", result)
             flag_result = 1
+            if start > 30.8:
+                print("LLL4",timer_count)
+                break
 
+        #print("Firs number", a)
+        #print("Second number", b)
+        #print("Operator",op)
+        #print("Result", result)
         cv2.imshow("Video", img)
         cv2.waitKey(1)
-        print(frame_count)
+        #print(timer_count)
 
-    #print(time.process_time() - start)
     capture.release()
     cv2.destroyAllWindows()
-
 
 if __name__ == '__main__':
     main()
